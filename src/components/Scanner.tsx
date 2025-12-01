@@ -28,7 +28,7 @@ export function Scanner() {
     constraints: {
       video: { 
         facingMode: 'environment',
-        advanced: [{} as any]
+        advanced: [{torch: false} as any]
       },
       audio: false,
     },
@@ -76,26 +76,36 @@ export function Scanner() {
   
   const trackRef = useRef<any>(null);
   useEffect(() => {
-    const id = setInterval(() => {
-      if (ref.current && ref.current.srcObject && !trackRef.current) {
+  const id = setInterval(() => {
+      if (ref.current && ref.current.srcObject) {
         const [track] = (ref.current.srcObject as MediaStream).getVideoTracks();
-        trackRef.current = track;
-        const s = track.getSettings();
-        if ('torch' in s) setTorchOn(prev => prev !== s.torch ? !!s.torch : prev);
+
+        if (trackRef.current !== track) {
+          trackRef.current = track;
+
+          const caps = track.getCapabilities?.() as any;
+          if (caps?.torch) {
+            // Siempre que haya nuevo track → torch inicia apagado
+            track.applyConstraints({ advanced: [{ torch: false }] } as any).catch(() => {});
+            setTorchOn(false);
+          }
+        }
       }
-    }, 500);
+    }, 300);
+
     return () => clearInterval(id);
   }, [ref]);
 
   const toggleTorch = async () => {
-    if (!trackRef.current) return;
+    const track = trackRef.current;
+    if (!track) return;
 
-    const caps = trackRef.current.getCapabilities();
+    const caps = track.getCapabilities();
     if (!caps.torch) return;
 
     const next = !torchOn;
     try {
-      await trackRef.current.applyConstraints({
+      await track.applyConstraints({
         advanced: [{ torch: next }]
       } as any);
       setTorchOn(next);
@@ -196,7 +206,7 @@ export function Scanner() {
             }
           </button>
 
-          {trackRef.current?.getCapabilities?.().torch && (
+          {(trackRef.current?.getCapabilities?.().torch ?? false) && (
             <button
               type="button"
               onClick={toggleTorch}
