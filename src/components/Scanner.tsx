@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useZxing } from 'react-zxing';
-import { TriangleAlert, Copy } from "lucide-react";
+import { TriangleAlert, Copy, Flashlight, FlashlightOff } from "lucide-react";
 
 import { detectContentType, type ContentType } from '../utils/contentType';
 import { copyToClipboard } from '../utils/utils';
@@ -18,10 +18,11 @@ export function Scanner() {
   const [current, setCurrent] = useState<ScanResult | null>(null);
   const [history, setHistory] = useState<ScanResult[]>([]);
   const [paused, setPaused] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
   const [infoAlerta, setInfoAlerta] = useState<string | null>(null);
   const [selectType, setSelectType] = useState<ContentType>('text');
 
-  const { ref, torch } = useZxing({
+  const { ref } = useZxing({
     paused,
     timeBetweenDecodingAttempts: 400,
     constraints: {
@@ -62,6 +63,39 @@ export function Scanner() {
       console.debug(error);
     },
   });
+
+  
+  const trackRef = useRef<any>(null);
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (ref.current && ref.current.srcObject && !trackRef.current) {
+        const [track] = (ref.current.srcObject as MediaStream).getVideoTracks();
+        trackRef.current = track;
+        const s = track.getSettings();
+        if ('torch' in s) setTorchOn(!!s.torch);
+      }
+    }, 500);
+
+    return () => clearInterval(id);
+  }, [ref]);
+
+  useEffect(() => {
+    if (paused && torchOn) toggleTorch();
+  }, [paused]);
+
+  const toggleTorch = async () => {
+    if (!trackRef.current) return;
+
+    const caps = trackRef.current.getCapabilities();
+    if (!caps.torch) return;
+
+    const next = !torchOn;
+    await trackRef.current.applyConstraints({
+      advanced: [{ torch: next }]
+    } as any);
+    setTorchOn(next);
+  };
+
   
   const resultadoCopyToClipboard = async (texto:string) => await copyToClipboard(texto);
 
@@ -154,13 +188,17 @@ export function Scanner() {
             }
           </button>
 
-          {torch?.isAvailable && (
+          {trackRef.current?.getCapabilities?.().torch && (
             <button
               type="button"
-              onClick={() => (torch.isOn ? torch.off() : torch.on())}
-              className="rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold text-slate-100 hover:bg-slate-800"
+              onClick={toggleTorch}
+              className={`outline-0 p-2 rounded-lg cursor-pointer border ${
+                torchOn
+                  ? "border-yellow-600 text-yellow-200 bg-yellow-800/40 hover:bg-yellow-800/70"
+                  : "border-sky-600 text-sky-100 hover:bg-sky-800"
+              }`}
             >
-              {torch.isOn ? 'Apagar linterna' : 'Encender linterna'}
+              {torchOn ? <FlashlightOff size={18}/> : <Flashlight size={18}/>}
             </button>
           )}
         </div>
