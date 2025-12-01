@@ -25,7 +25,10 @@ export function Scanner() {
     paused,
     timeBetweenDecodingAttempts: 400,
     constraints: {
-      video: { facingMode: 'environment' },
+      video: { 
+        facingMode: 'environment',
+        advanced: [{ torch: true } as any]
+      },
       audio: false,
     },
     onDecodeResult(result) {
