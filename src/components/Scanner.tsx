@@ -79,10 +79,6 @@ export function Scanner() {
     return () => clearInterval(id);
   }, [ref]);
 
-  useEffect(() => {
-    if (paused && torchOn) toggleTorch();
-  }, [paused]);
-
   const toggleTorch = async () => {
     if (!trackRef.current) return;
 
@@ -163,7 +159,7 @@ export function Scanner() {
           <TriangleAlert size={16} />
         </p>}
 
-        <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
           {!paused && (
             <button
               type="button"
