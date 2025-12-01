@@ -28,7 +28,7 @@ export function Scanner() {
     constraints: {
       video: { 
         facingMode: 'environment',
-        advanced: [{ torch: true } as any]
+        advanced: [{} as any]
       },
       audio: false,
     },
@@ -64,6 +64,15 @@ export function Scanner() {
     },
   });
 
+  useEffect(() => {
+    if (!paused && trackRef.current) {
+      // El escáner volvió a activarse → forzar torch apagado
+      trackRef.current.applyConstraints({
+        advanced: [{ torch: false }]
+      } as any).catch(() => {});
+      setTorchOn(false);
+    }
+  }, [paused]);
   
   const trackRef = useRef<any>(null);
   useEffect(() => {
@@ -72,7 +81,7 @@ export function Scanner() {
         const [track] = (ref.current.srcObject as MediaStream).getVideoTracks();
         trackRef.current = track;
         const s = track.getSettings();
-        if ('torch' in s) setTorchOn(!!s.torch);
+        if ('torch' in s) setTorchOn(prev => prev !== s.torch ? !!s.torch : prev);
       }
     }, 500);
     return () => clearInterval(id);
@@ -85,10 +94,14 @@ export function Scanner() {
     if (!caps.torch) return;
 
     const next = !torchOn;
-    await trackRef.current.applyConstraints({
-      advanced: [{ torch: next }]
-    } as any);
-    setTorchOn(next);
+    try {
+      await trackRef.current.applyConstraints({
+        advanced: [{ torch: next }]
+      } as any);
+      setTorchOn(next);
+    } catch {
+      setTorchOn(false);
+    }
   };
 
   
