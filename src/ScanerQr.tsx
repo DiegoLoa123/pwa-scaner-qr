@@ -5,7 +5,7 @@ export default function ScanerQr() {
     <main className="flex min-h-screen flex-col bg-slate-950 text-slate-50">
       <header className="border-b border-slate-800 bg-slate-950/80 px-4 py-3">
         <h1 className="text-lg font-semibold tracking-tight">
-          QR & Barcode Scanner
+          QR & Barcode Scanner V.1.2.6
         </h1>
         <p className="text-xs text-slate-400">
           PWA offline para leer códigos y entender qué hacen sus enlaces.

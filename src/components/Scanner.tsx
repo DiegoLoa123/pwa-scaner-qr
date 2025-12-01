@@ -73,10 +73,8 @@ export function Scanner() {
         trackRef.current = track;
         const s = track.getSettings();
         if ('torch' in s) setTorchOn(!!s.torch);
-        setTorchOn(false);
       }
     }, 500);
-
     return () => clearInterval(id);
   }, [ref]);
 
